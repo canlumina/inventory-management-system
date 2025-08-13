@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(rm:*)",
+      "Bash(npm create vue:*)",
+      "Bash(mv:*)",
+      "Bash(true)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

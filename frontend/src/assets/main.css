@@ -1,0 +1,93 @@
+@import './base.css';
+
+#app {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.el-main {
+  padding: 20px;
+}
+
+.el-card {
+  margin-bottom: 20px;
+}
+
+.el-table .cell {
+  word-break: break-word;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Loading animation */
+.el-loading-spinner {
+  margin-top: -25px;
+  margin-left: -25px;
+  width: 50px;
+  height: 50px;
+}
+
+/* Form styles */
+.el-form-item {
+  margin-bottom: 18px;
+}
+
+.el-input, .el-textarea {
+  width: 100%;
+}
+
+/* Button styles */
+.el-button + .el-button {
+  margin-left: 10px;
+}
+
+/* Table styles */
+.el-table {
+  font-size: 14px;
+}
+
+.el-table th {
+  background-color: #f5f7fa;
+  color: #909399;
+  font-weight: 500;
+}
+
+/* Card styles */
+.el-card__header {
+  padding: 18px 20px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.el-card__body {
+  padding: 20px;
+}
