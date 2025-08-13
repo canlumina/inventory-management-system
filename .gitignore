@@ -2,6 +2,8 @@
 # 进销存管理系统 .gitignore
 # ===================================
 
+.claude/
+
 # ===== Python/Backend =====
 # Byte-compiled / optimized / DLL files
 __pycache__/
