@@ -3,7 +3,7 @@
 # ===================================
 
 .claude/
-
+CLAUDE.md
 # ===== Python/Backend =====
 # Byte-compiled / optimized / DLL files
 __pycache__/
