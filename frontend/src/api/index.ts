@@ -2,8 +2,13 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
+// 在开发环境中使用代理，生产环境中使用环境变量
+const baseURL = '/api/v1'
+console.log('API Base URL:', baseURL)
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL)
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL,
   timeout: 10000,
 })
 

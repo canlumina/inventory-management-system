@@ -1,7 +1,5 @@
 from typing import Optional
-
-from sqlalchemy.orm import Session
-
+from sqlalchemy.orm import Session, joinedload
 from app.crud.base import CRUDBase
 from app.models.inventory import Inventory
 from app.models.inventory_transaction import InventoryTransaction, TransactionType, ReferenceType
@@ -10,7 +8,10 @@ from app.schemas.inventory import InventoryCreate, InventoryUpdate
 
 class CRUDInventory(CRUDBase[Inventory, InventoryCreate, InventoryUpdate]):
     def get_by_product(self, db: Session, *, product_id: int) -> Optional[Inventory]:
-        return db.query(Inventory).filter(Inventory.product_id == product_id).first()
+        return db.query(Inventory).options(joinedload(Inventory.product)).filter(Inventory.product_id == product_id).first()
+    
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100):
+        return db.query(self.model).options(joinedload(Inventory.product)).offset(skip).limit(limit).all()
 
     def create_or_get(self, db: Session, *, product_id: int) -> Inventory:
         inventory = self.get_by_product(db, product_id=product_id)
@@ -48,7 +49,8 @@ class CRUDInventory(CRUDBase[Inventory, InventoryCreate, InventoryUpdate]):
         
         db.commit()
         db.refresh(inventory)
-        return inventory
+        # Re-fetch with product relationship loaded
+        return self.get_by_product(db, product_id=product_id)
 
     def reserve_quantity(self, db: Session, *, product_id: int, quantity: int) -> bool:
         inventory = self.get_by_product(db, product_id=product_id)

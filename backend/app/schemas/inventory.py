@@ -1,6 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
+from app.schemas.product import Product
 
 
 class InventoryBase(BaseModel):
@@ -27,12 +28,7 @@ class InventoryInDBBase(InventoryBase):
 
 class Inventory(InventoryInDBBase):
     available_quantity: Optional[int] = None
-
-    @classmethod
-    def from_orm(cls, obj):
-        data = cls.from_attributes(obj)
-        data.available_quantity = obj.available_quantity
-        return data
+    product: Optional[Product] = None
 
 
 class InventoryInDB(InventoryInDBBase):

@@ -71,16 +71,29 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   
-  if (to.meta.requiresAuth && !userStore.user) {
-    next('/login')
-  } else if (to.meta.requiresGuest && userStore.user) {
-    next('/dashboard')
-  } else {
-    next()
+  if (to.meta.requiresAuth) {
+    if (!userStore.user && userStore.token) {
+      // 尝试使用存储的token恢复用户信息
+      const isAuthenticated = await userStore.checkAuth()
+      if (!isAuthenticated) {
+        next('/login')
+        return
+      }
+    } else if (!userStore.user) {
+      next('/login')
+      return
+    }
   }
+  
+  if (to.meta.requiresGuest && userStore.user) {
+    next('/dashboard')
+    return
+  }
+  
+  next()
 })
 
 export default router

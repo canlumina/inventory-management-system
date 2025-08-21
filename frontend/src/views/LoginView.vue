@@ -87,8 +87,12 @@ const handleLogin = async () => {
     loading.value = true
 
     const { access_token } = await authApi.login(loginForm)
-    const userData = await authApi.getMe()
     
+    // 先设置token，然后获取用户信息
+    userStore.token = access_token
+    localStorage.setItem('token', access_token)
+    
+    const userData = await authApi.getMe()
     userStore.setUser(userData, access_token)
     ElMessage.success('登录成功')
     router.push('/dashboard')

@@ -13,4 +13,8 @@ export const inventoryApi = {
   adjust: async (data: { product_id: number; quantity: number; reason?: string }): Promise<void> => {
     return await api.post('/inventory/adjustment', data)
   },
+
+  getAlerts: async (): Promise<Inventory[]> => {
+    return await api.get('/inventory/alerts')
+  },
 }

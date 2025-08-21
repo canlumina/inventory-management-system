@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Security
     secret_key: str = "your-secret-key-here"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 1440  # 24小时
     
     # CORS
     backend_cors_origins: list = ["http://localhost:3000", "http://localhost:8080"]

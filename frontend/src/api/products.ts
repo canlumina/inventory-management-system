@@ -3,7 +3,7 @@ import type { Product } from '@/types'
 
 export const productsApi = {
   getList: async (params?: { skip?: number; limit?: number }): Promise<Product[]> => {
-    return await api.get('/products', { params })
+    return await api.get('/products/', { params })
   },
 
   getById: async (id: number): Promise<Product> => {

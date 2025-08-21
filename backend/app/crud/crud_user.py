@@ -41,7 +41,11 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return super().update(db, db_obj=db_obj, obj_in=update_data)
 
     def authenticate(self, db: Session, *, email: str, password: str) -> Optional[User]:
+        # 支持用户名或邮箱登录
         user = self.get_by_email(db, email=email)
+        if not user:
+            # 如果邮箱未找到，尝试用用户名查找
+            user = self.get_by_username(db, username=email)
         if not user:
             return None
         if not verify_password(password, user.password_hash):
