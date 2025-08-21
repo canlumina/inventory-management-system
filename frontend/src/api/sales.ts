@@ -21,6 +21,10 @@ export const salesApi = {
     return await api.put(`/sales/${id}`, data)
   },
 
+  updateStatus: async (id: number, status: string): Promise<SalesOrder> => {
+    return await api.put(`/sales/${id}/status`, { status })
+  },
+
   ship: async (id: number): Promise<SalesOrder> => {
     return await api.post(`/sales/${id}/ship`)
   },

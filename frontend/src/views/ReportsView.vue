@@ -138,38 +138,91 @@
                 </el-form-item>
               </el-form>
 
-              <el-table :data="salesReportData" style="width: 100%" v-loading="salesReportLoading">
-                <el-table-column prop="date" label="日期" width="120" />
-                <el-table-column prop="orders" label="订单数" width="100" />
-                <el-table-column prop="amount" label="销售金额" width="120">
+              <div style="margin-bottom: 20px" v-if="salesReport">
+                <el-row :gutter="16">
+                  <el-col :span="4">
+                    <el-statistic title="销售单总数" :value="salesReport.summary.total_orders" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="销售总额" :value="`¥${salesReport.summary.total_amount}`" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="实际收入" :value="`¥${salesReport.summary.total_revenue}`" />
+                  </el-col>
+                  <el-col :span="3">
+                    <el-statistic title="待确认" :value="salesReport.summary.pending_orders" />
+                  </el-col>
+                  <el-col :span="3">
+                    <el-statistic title="已确认" :value="salesReport.summary.confirmed_orders" />
+                  </el-col>
+                  <el-col :span="3">
+                    <el-statistic title="已发货" :value="salesReport.summary.shipped_orders" />
+                  </el-col>
+                  <el-col :span="3">
+                    <el-statistic title="已完成" :value="salesReport.summary.delivered_orders" />
+                  </el-col>
+                </el-row>
+              </div>
+
+              <el-table :data="salesReport?.orders" style="width: 100%" v-loading="salesReportLoading">
+                <el-table-column prop="order_number" label="销售单号" width="160" />
+                <el-table-column prop="customer_name" label="客户" />
+                <el-table-column prop="order_date" label="销售日期" width="120">
                   <template #default="scope">
-                    ¥{{ scope.row.amount }}
+                    {{ formatDateTime(scope.row.order_date) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="profit" label="利润" width="120">
+                <el-table-column prop="total_amount" label="销售金额" width="120">
                   <template #default="scope">
-                    ¥{{ scope.row.profit }}
+                    ¥{{ scope.row.total_amount }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="items_count" label="商品数量" width="100" />
+                <el-table-column prop="status" label="状态" width="100">
+                  <template #default="scope">
+                    <el-tag :type="getSalesStatusType(scope.row.status)" size="small">
+                      {{ getSalesStatusText(scope.row.status) }}
+                    </el-tag>
                   </template>
                 </el-table-column>
               </el-table>
             </el-tab-pane>
 
             <el-tab-pane label="库存报表" name="inventory">
-              <el-table :data="inventoryReportData" style="width: 100%" v-loading="inventoryReportLoading">
+              <div style="margin-bottom: 20px" v-if="inventoryReport">
+                <el-row :gutter="16">
+                  <el-col :span="6">
+                    <el-statistic title="商品总数" :value="inventoryReport.total_products" />
+                  </el-col>
+                  <el-col :span="6">
+                    <el-statistic title="库存总价值" :value="`¥${inventoryReport.total_stock_value}`" />
+                  </el-col>
+                  <el-col :span="6">
+                    <el-statistic title="低库存商品" :value="inventoryReport.low_stock_products" />
+                  </el-col>
+                  <el-col :span="6">
+                    <el-statistic title="缺货商品" :value="inventoryReport.out_of_stock_products" />
+                  </el-col>
+                </el-row>
+              </div>
+              
+              <el-table :data="inventoryReport?.items" style="width: 100%" v-loading="inventoryReportLoading">
                 <el-table-column prop="product_name" label="商品名称" />
+                <el-table-column prop="product_code" label="商品编码" width="120" />
                 <el-table-column prop="current_stock" label="当前库存" width="100" />
+                <el-table-column prop="available_stock" label="可用库存" width="100" />
                 <el-table-column prop="stock_value" label="库存价值" width="120">
                   <template #default="scope">
                     ¥{{ scope.row.stock_value }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="status" label="库存状态" width="100">
+                <el-table-column prop="stock_status" label="库存状态" width="100">
                   <template #default="scope">
                     <el-tag
-                      :type="scope.row.current_stock === 0 ? 'danger' : scope.row.current_stock <= scope.row.min_stock ? 'warning' : 'success'"
+                      :type="scope.row.stock_status === 'out_of_stock' ? 'danger' : scope.row.stock_status === 'warning' ? 'warning' : 'success'"
                       size="small"
                     >
-                      {{ scope.row.current_stock === 0 ? '缺货' : scope.row.current_stock <= scope.row.min_stock ? '预警' : '正常' }}
+                      {{ scope.row.stock_status === 'out_of_stock' ? '缺货' : scope.row.stock_status === 'warning' ? '预警' : '正常' }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -177,15 +230,50 @@
             </el-tab-pane>
 
             <el-tab-pane label="采购报表" name="purchase">
-              <el-table :data="purchaseReportData" style="width: 100%" v-loading="purchaseReportLoading">
-                <el-table-column prop="date" label="日期" width="120" />
-                <el-table-column prop="orders" label="采购单数" width="100" />
-                <el-table-column prop="amount" label="采购金额" width="120">
+              <div style="margin-bottom: 20px" v-if="purchaseReport">
+                <el-row :gutter="16">
+                  <el-col :span="4">
+                    <el-statistic title="采购单总数" :value="purchaseReport.summary.total_orders" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="采购总金额" :value="`¥${purchaseReport.summary.total_amount}`" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="待确认" :value="purchaseReport.summary.pending_orders" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="已确认" :value="purchaseReport.summary.confirmed_orders" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="已入库" :value="purchaseReport.summary.received_orders" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-statistic title="已取消" :value="purchaseReport.summary.cancelled_orders" />
+                  </el-col>
+                </el-row>
+              </div>
+              
+              <el-table :data="purchaseReport?.orders" style="width: 100%" v-loading="purchaseReportLoading">
+                <el-table-column prop="order_number" label="采购单号" width="160" />
+                <el-table-column prop="supplier_name" label="供应商" />
+                <el-table-column prop="order_date" label="采购日期" width="120">
                   <template #default="scope">
-                    ¥{{ scope.row.amount }}
+                    {{ formatDateTime(scope.row.order_date) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="supplier_name" label="主要供应商" />
+                <el-table-column prop="total_amount" label="采购金额" width="120">
+                  <template #default="scope">
+                    ¥{{ scope.row.total_amount }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="items_count" label="商品数量" width="100" />
+                <el-table-column prop="status" label="状态" width="100">
+                  <template #default="scope">
+                    <el-tag :type="getStatusType(scope.row.status)" size="small">
+                      {{ getStatusText(scope.row.status) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
               </el-table>
             </el-tab-pane>
           </el-tabs>
@@ -198,12 +286,20 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { reportsApi } from '@/api/reports'
+import type { InventoryReport, SalesReport, PurchaseReport, FinancialSummary } from '@/api/reports'
 
 const salesDateRange = ref([])
 const activeTab = ref('sales')
 const salesReportLoading = ref(false)
 const inventoryReportLoading = ref(false)
 const purchaseReportLoading = ref(false)
+
+// Report data
+const inventoryReport = ref<InventoryReport | null>(null)
+const salesReport = ref<SalesReport | null>(null)
+const purchaseReport = ref<PurchaseReport | null>(null)
+const financialReport = ref<FinancialSummary | null>(null)
 
 // 模拟数据
 const topProducts = ref([
@@ -232,38 +328,50 @@ const salesReportForm = reactive({
   dateRange: []
 })
 
-const salesReportData = ref([
-  { date: '2025-01-15', orders: 25, amount: 125000, profit: 25000 },
-  { date: '2025-01-16', orders: 32, amount: 156000, profit: 31200 },
-  { date: '2025-01-17', orders: 28, amount: 140000, profit: 28000 },
-  { date: '2025-01-18', orders: 35, amount: 175000, profit: 35000 },
-  { date: '2025-01-19', orders: 30, amount: 150000, profit: 30000 }
-])
-
-const inventoryReportData = ref([
-  { product_name: 'iPhone 14 Pro', current_stock: 45, min_stock: 10, stock_value: 450000 },
-  { product_name: '小米 13', current_stock: 0, min_stock: 20, stock_value: 0 },
-  { product_name: 'iPad Air', current_stock: 8, min_stock: 15, stock_value: 40000 },
-  { product_name: 'MacBook Pro', current_stock: 25, min_stock: 8, stock_value: 375000 }
-])
-
-const purchaseReportData = ref([
-  { date: '2025-01-15', orders: 8, amount: 80000, supplier_name: '苹果供应商' },
-  { date: '2025-01-16', orders: 12, amount: 120000, supplier_name: '小米供应商' },
-  { date: '2025-01-17', orders: 6, amount: 60000, supplier_name: '华为供应商' },
-  { date: '2025-01-18', orders: 10, amount: 100000, supplier_name: '三星供应商' }
-])
+// API loading functions
+const loadInventoryReport = async () => {
+  try {
+    inventoryReportLoading.value = true
+    inventoryReport.value = await reportsApi.getInventoryReport()
+  } catch (error) {
+    ElMessage.error('加载库存报表失败')
+  } finally {
+    inventoryReportLoading.value = false
+  }
+}
 
 const loadSalesReport = async () => {
   try {
     salesReportLoading.value = true
-    // 这里调用 API 加载销售报表数据
-    // const data = await reportsApi.getSalesReport(salesReportForm.dateRange)
-    // salesReportData.value = data
+    const params: any = {}
+    if (salesReportForm.dateRange && salesReportForm.dateRange.length === 2) {
+      params.start_date = salesReportForm.dateRange[0]
+      params.end_date = salesReportForm.dateRange[1]
+    }
+    salesReport.value = await reportsApi.getSalesReport(params)
   } catch (error) {
     ElMessage.error('加载销售报表失败')
   } finally {
     salesReportLoading.value = false
+  }
+}
+
+const loadPurchaseReport = async () => {
+  try {
+    purchaseReportLoading.value = true
+    purchaseReport.value = await reportsApi.getPurchaseReport()
+  } catch (error) {
+    ElMessage.error('加载采购报表失败')
+  } finally {
+    purchaseReportLoading.value = false
+  }
+}
+
+const loadFinancialReport = async () => {
+  try {
+    financialReport.value = await reportsApi.getFinancialReport()
+  } catch (error) {
+    ElMessage.error('加载财务报表失败')
   }
 }
 
@@ -277,9 +385,59 @@ const exportInventoryReport = () => {
   // 这里实现导出逻辑
 }
 
+// Helper functions for status formatting
+const getStatusType = (status: string) => {
+  const types: Record<string, string> = {
+    pending: '',
+    confirmed: 'warning',
+    received: 'success',
+    cancelled: 'danger'
+  }
+  return types[status] || ''
+}
+
+const getStatusText = (status: string) => {
+  const texts: Record<string, string> = {
+    pending: '待确认',
+    confirmed: '已确认',
+    received: '已入库',
+    cancelled: '已取消'
+  }
+  return texts[status] || status
+}
+
+const getSalesStatusType = (status: string) => {
+  const types: Record<string, string> = {
+    pending: '',
+    confirmed: 'warning',
+    shipped: 'info',
+    delivered: 'success',
+    cancelled: 'danger'
+  }
+  return types[status] || ''
+}
+
+const getSalesStatusText = (status: string) => {
+  const texts: Record<string, string> = {
+    pending: '待确认',
+    confirmed: '已确认',
+    shipped: '已发货',
+    delivered: '已完成',
+    cancelled: '已取消'
+  }
+  return texts[status] || status
+}
+
+const formatDateTime = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('zh-CN')
+}
+
 onMounted(() => {
-  // 初始化加载报表数据
-  console.log('Reports page mounted')
+  // 初始化加载所有报表数据
+  loadInventoryReport()
+  loadSalesReport()
+  loadPurchaseReport()
+  loadFinancialReport()
 })
 </script>
 

@@ -8,6 +8,42 @@
       </el-button>
     </div>
 
+    <!-- Search Filter -->
+    <SearchFilter
+      :loading="loading"
+      :initial-filters="{ search: '', category: '' }"
+      @search="handleSearch"
+      @reset="handleReset"
+    >
+      <template #filters="{ filters }">
+        <el-form-item label="搜索">
+          <el-input
+            v-model="(filters as any).search"
+            placeholder="商品名称/编码"
+            clearable
+            @keyup.enter="handleSearch(filters)"
+            style="width: 250px"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select
+            v-model="(filters as any).category"
+            placeholder="请选择分类"
+            clearable
+            style="width: 150px"
+          >
+            <el-option label="电子产品" value="electronics" />
+            <el-option label="服装" value="clothing" />
+            <el-option label="食品" value="food" />
+          </el-select>
+        </el-form-item>
+      </template>
+    </SearchFilter>
+
     <el-card>
       <el-table :data="products" style="width: 100%" v-loading="loading">
         <el-table-column prop="code" label="商品编码" width="120" />
@@ -50,15 +86,11 @@
         </el-table-column>
       </el-table>
 
-      <el-pagination
+      <PaginationWrapper
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
         :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        style="margin-top: 20px"
+        @change="handlePageChange"
       />
     </el-card>
 
@@ -138,9 +170,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, type FormInstance } from 'element-plus'
+import { type FormInstance } from 'element-plus'
 import { productsApi } from '@/api/products'
 import type { Product } from '@/types'
+import SearchFilter from '@/components/SearchFilter.vue'
+import PaginationWrapper from '@/components/PaginationWrapper.vue'
+import { commonRules } from '@/utils/validation'
+import { handleApiError, handleSuccess } from '@/utils/errorHandler'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -163,23 +199,46 @@ const form = reactive<Partial<Product>>({
   description: '',
 })
 
+// Search filters
+const searchFilters = ref<{
+  search: string
+  category: string
+}>({
+  search: '',
+  category: ''
+})
+
 const rules = {
-  name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
-  code: [{ required: true, message: '请输入商品编码', trigger: 'blur' }],
+  name: commonRules.name,
+  code: commonRules.code,
   unit: [{ required: true, message: '请输入单位', trigger: 'blur' }],
+  purchase_price: commonRules.price,
+  sale_price: commonRules.price,
+  min_stock: [{ required: true, message: '请输入最低库存', trigger: 'blur' }],
+  description: commonRules.description
 }
 
 const loadProducts = async () => {
   try {
     loading.value = true
-    const data = await productsApi.getList({
+    const params: any = {
       skip: (currentPage.value - 1) * pageSize.value,
       limit: pageSize.value
-    })
+    }
+    
+    // Add search filters
+    if (searchFilters.value.search) {
+      params.search = searchFilters.value.search
+    }
+    if (searchFilters.value.category) {
+      params.category = searchFilters.value.category
+    }
+    
+    const data = await productsApi.getList(params)
     products.value = data
     total.value = data.length // In real app, this should come from API
   } catch (error) {
-    ElMessage.error('加载商品列表失败')
+    handleApiError(error, '加载商品列表失败')
   } finally {
     loading.value = false
   }
@@ -220,16 +279,16 @@ const handleSubmit = async () => {
 
     if (dialogMode.value === 'create') {
       await productsApi.create(form as Omit<Product, 'id' | 'created_at' | 'updated_at'>)
-      ElMessage.success('商品创建成功')
+      handleSuccess('商品创建成功')
     } else {
       await productsApi.update(form.id!, form)
-      ElMessage.success('商品更新成功')
+      handleSuccess('商品更新成功')
     }
 
     dialogVisible.value = false
     loadProducts()
   } catch (error) {
-    console.error('Submit failed:', error)
+    handleApiError(error, dialogMode.value === 'create' ? '创建商品失败' : '更新商品失败')
   } finally {
     submitting.value = false
   }
@@ -238,20 +297,33 @@ const handleSubmit = async () => {
 const deleteProduct = async (id: number) => {
   try {
     await productsApi.delete(id)
-    ElMessage.success('商品删除成功')
+    handleSuccess('商品删除成功')
     loadProducts()
   } catch (error) {
-    ElMessage.error('删除商品失败')
+    handleApiError(error, '删除商品失败')
   }
 }
 
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
+// Search functionality
+const handleSearch = (filters: any) => {
+  searchFilters.value = filters
+  currentPage.value = 1
   loadProducts()
 }
 
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val
+const handleReset = () => {
+  searchFilters.value = {
+    search: '',
+    category: ''
+  }
+  currentPage.value = 1
+  loadProducts()
+}
+
+// Pagination
+const handlePageChange = (page: number, size: number) => {
+  currentPage.value = page
+  pageSize.value = size
   loadProducts()
 }
 

@@ -29,7 +29,7 @@
             {{ formatDateTime(scope.row.order_date) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="scope">
             <el-button
               type="primary"
@@ -38,14 +38,42 @@
             >
               查看
             </el-button>
-            <el-button
-              v-if="scope.row.status === 'confirmed'"
-              type="warning"
-              size="small"
-              @click="shipSales(scope.row)"
+            <el-dropdown 
+              v-if="scope.row.status !== 'delivered' && scope.row.status !== 'cancelled'"
+              @command="(command: string) => updateStatus(scope.row, command)"
             >
-              发货
-            </el-button>
+              <el-button size="small">
+                状态操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'pending'"
+                    command="confirmed"
+                  >
+                    确认销售单
+                  </el-dropdown-item>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'confirmed'"
+                    command="shipped"
+                  >
+                    发货出库
+                  </el-dropdown-item>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'shipped'"
+                    command="delivered"
+                  >
+                    确认收货
+                  </el-dropdown-item>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'pending' || scope.row.status === 'confirmed'"
+                    command="cancelled"
+                  >
+                    取消销售单
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -335,11 +363,18 @@ const viewSales = (sales: SalesOrder) => {
   console.log('View sales:', sales)
 }
 
-const shipSales = async (sales: SalesOrder) => {
+const updateStatus = async (sales: SalesOrder, status: string) => {
+  const statusTexts: Record<string, string> = {
+    confirmed: '确认销售单',
+    shipped: '发货出库',
+    delivered: '确认收货',
+    cancelled: '取消销售单'
+  }
+
   try {
     await ElMessageBox.confirm(
-      `确定要对销售单 ${sales.order_number} 进行发货操作吗？`,
-      '确认发货',
+      `确定要${statusTexts[status]}吗？`,
+      '状态更新确认',
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -347,12 +382,19 @@ const shipSales = async (sales: SalesOrder) => {
       }
     )
 
-    await salesApi.ship(sales.id)
-    ElMessage.success('销售单发货成功')
+    if (status === 'shipped') {
+      // Use ship API for inventory update
+      await salesApi.ship(sales.id)
+    } else {
+      // Use status update API
+      await salesApi.updateStatus(sales.id, status)
+    }
+    
+    ElMessage.success(`销售单${statusTexts[status]}成功`)
     loadSales()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('发货操作失败')
+      ElMessage.error(`${statusTexts[status]}失败`)
     }
   }
 }

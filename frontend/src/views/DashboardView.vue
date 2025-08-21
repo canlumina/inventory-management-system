@@ -10,7 +10,7 @@
               <el-icon><Goods /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-number">{{ stats.products }}</div>
+              <div class="stat-number">{{ dashboardData?.total_products || 0 }}</div>
               <div class="stat-label">商品总数</div>
             </div>
           </div>
@@ -24,7 +24,7 @@
               <el-icon><Box /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-number">{{ stats.lowStock }}</div>
+              <div class="stat-number">{{ dashboardData?.low_stock_alerts || 0 }}</div>
               <div class="stat-label">低库存商品</div>
             </div>
           </div>
@@ -38,7 +38,7 @@
               <el-icon><ShoppingCart /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-number">{{ stats.pendingPurchases }}</div>
+              <div class="stat-number">{{ dashboardData?.pending_purchase_orders || 0 }}</div>
               <div class="stat-label">待处理采购单</div>
             </div>
           </div>
@@ -52,8 +52,53 @@
               <el-icon><Sell /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-number">{{ stats.pendingSales }}</div>
+              <div class="stat-number">{{ dashboardData?.pending_sales_orders || 0 }}</div>
               <div class="stat-label">待处理销售单</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- Additional stats row -->
+    <el-row :gutter="20" class="stats-row">
+      <el-col :span="8">
+        <el-card class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon revenue">
+              <el-icon><Money /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-number">¥{{ dashboardData?.monthly_revenue || 0 }}</div>
+              <div class="stat-label">本月收入</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <el-col :span="8">
+        <el-card class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon orders">
+              <el-icon><Document /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-number">{{ dashboardData?.monthly_orders || 0 }}</div>
+              <div class="stat-label">本月订单</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+
+      <el-col :span="8">
+        <el-card class="stat-card">
+          <div class="stat-content">
+            <div class="stat-icon value">
+              <el-icon><Shop /></el-icon>
+            </div>
+            <div class="stat-info">
+              <div class="stat-number">¥{{ dashboardData?.total_inventory_value || 0 }}</div>
+              <div class="stat-label">库存总值</div>
             </div>
           </div>
         </el-card>
@@ -90,17 +135,17 @@
             </div>
           </template>
           
-          <el-table :data="lowStockProducts" style="width: 100%">
-            <el-table-column prop="name" label="商品名称" />
+          <el-table :data="lowStockProducts" style="width: 100%" v-loading="loading">
+            <el-table-column prop="product_name" label="商品名称" />
             <el-table-column prop="current_stock" label="当前库存" width="100" />
             <el-table-column prop="min_stock" label="最低库存" width="100" />
-            <el-table-column label="状态" width="80">
+            <el-table-column prop="stock_status" label="状态" width="80">
               <template #default="scope">
                 <el-tag
-                  :type="scope.row.current_stock === 0 ? 'danger' : 'warning'"
+                  :type="scope.row.stock_status === 'out_of_stock' ? 'danger' : 'warning'"
                   size="small"
                 >
-                  {{ scope.row.current_stock === 0 ? '缺货' : '预警' }}
+                  {{ scope.row.stock_status === 'out_of_stock' ? '缺货' : '预警' }}
                 </el-tag>
               </template>
             </el-table-column>
@@ -113,13 +158,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { reportsApi } from '@/api/reports'
+import type { DashboardSummary, InventoryReport } from '@/api/reports'
 
-const stats = ref({
-  products: 156,
-  lowStock: 8,
-  pendingPurchases: 12,
-  pendingSales: 5
-})
+const loading = ref(false)
+const dashboardData = ref<DashboardSummary | null>(null)
+const lowStockProducts = ref<any[]>([])
 
 const activities = ref([
   {
@@ -148,32 +193,32 @@ const activities = ref([
   }
 ])
 
-const lowStockProducts = ref([
-  {
-    name: 'iPhone 13',
-    current_stock: 0,
-    min_stock: 10
-  },
-  {
-    name: '小米12',
-    current_stock: 3,
-    min_stock: 20
-  },
-  {
-    name: 'iPad Air',
-    current_stock: 5,
-    min_stock: 15
-  },
-  {
-    name: 'MacBook Pro',
-    current_stock: 2,
-    min_stock: 8
+const loadDashboardData = async () => {
+  try {
+    loading.value = true
+    dashboardData.value = await reportsApi.getDashboardData()
+  } catch (error) {
+    ElMessage.error('加载仪表盘数据失败')
+  } finally {
+    loading.value = false
   }
-])
+}
+
+const loadLowStockProducts = async () => {
+  try {
+    const inventoryReport: InventoryReport = await reportsApi.getInventoryReport()
+    // Filter products with low stock or out of stock
+    lowStockProducts.value = inventoryReport.items.filter(item => 
+      item.stock_status === 'warning' || item.stock_status === 'out_of_stock'
+    ).slice(0, 10) // Show top 10 low stock items
+  } catch (error) {
+    ElMessage.error('加载库存预警数据失败')
+  }
+}
 
 onMounted(() => {
-  // Load dashboard data
-  console.log('Dashboard mounted')
+  loadDashboardData()
+  loadLowStockProducts()
 })
 </script>
 
@@ -229,6 +274,20 @@ onMounted(() => {
 
 .stat-icon.sales {
   background: linear-gradient(135deg, #43e97b, #38f9d7);
+}
+
+.stat-icon.revenue {
+  background: linear-gradient(135deg, #fa709a, #fee140);
+}
+
+.stat-icon.orders {
+  background: linear-gradient(135deg, #a8edea, #fed6e3);
+  color: #333 !important;
+}
+
+.stat-icon.value {
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  color: #333 !important;
 }
 
 .stat-info {

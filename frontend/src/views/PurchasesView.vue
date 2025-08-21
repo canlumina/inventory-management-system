@@ -29,7 +29,7 @@
             {{ formatDateTime(scope.row.order_date) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="scope">
             <el-button
               type="primary"
@@ -38,14 +38,36 @@
             >
               查看
             </el-button>
-            <el-button
-              v-if="scope.row.status === 'confirmed'"
-              type="success"
-              size="small"
-              @click="receivePurchase(scope.row)"
+            <el-dropdown 
+              v-if="scope.row.status !== 'received' && scope.row.status !== 'cancelled'"
+              @command="(command: string) => updateStatus(scope.row, command)"
             >
-              入库
-            </el-button>
+              <el-button size="small">
+                状态操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'pending'"
+                    command="confirmed"
+                  >
+                    确认采购单
+                  </el-dropdown-item>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'confirmed'"
+                    command="received"
+                  >
+                    收货入库
+                  </el-dropdown-item>
+                  <el-dropdown-item 
+                    v-if="scope.row.status === 'pending'"
+                    command="cancelled"
+                  >
+                    取消采购单
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
         </el-table-column>
       </el-table>
@@ -333,11 +355,17 @@ const viewPurchase = (purchase: PurchaseOrder) => {
   console.log('View purchase:', purchase)
 }
 
-const receivePurchase = async (purchase: PurchaseOrder) => {
+const updateStatus = async (purchase: PurchaseOrder, status: string) => {
+  const statusTexts: Record<string, string> = {
+    confirmed: '确认采购单',
+    received: '收货入库',
+    cancelled: '取消采购单'
+  }
+
   try {
     await ElMessageBox.confirm(
-      `确定要对采购单 ${purchase.order_number} 进行入库操作吗？`,
-      '确认入库',
+      `确定要${statusTexts[status]}吗？`,
+      '状态更新确认',
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -345,12 +373,19 @@ const receivePurchase = async (purchase: PurchaseOrder) => {
       }
     )
 
-    await purchasesApi.receive(purchase.id)
-    ElMessage.success('采购单入库成功')
+    if (status === 'received') {
+      // Use receive API for inventory update
+      await purchasesApi.receive(purchase.id)
+    } else {
+      // Use status update API
+      await purchasesApi.updateStatus(purchase.id, status)
+    }
+    
+    ElMessage.success(`采购单${statusTexts[status]}成功`)
     loadPurchases()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('入库操作失败')
+      ElMessage.error(`${statusTexts[status]}失败`)
     }
   }
 }

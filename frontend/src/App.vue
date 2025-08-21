@@ -84,7 +84,13 @@
 
         <!-- Main Content -->
         <el-main>
-          <router-view />
+          <router-view v-slot="{ Component }">
+            <transition name="fade" mode="out-in">
+              <keep-alive>
+                <component :is="Component" />
+              </keep-alive>
+            </transition>
+          </router-view>
         </el-main>
       </el-container>
     </el-container>
@@ -139,5 +145,51 @@ const handleLogout = () => {
 .el-main {
   padding: 20px;
   background-color: #f0f2f5;
+  position: relative;
+}
+
+/* Page transition effects */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Hover effects for menu items */
+.el-menu-item:hover {
+  background-color: #ecf5ff !important;
+}
+
+.el-sub-menu__title:hover {
+  background-color: #ecf5ff !important;
+}
+
+/* Active menu item styling */
+.el-menu-item.is-active {
+  background-color: #409eff !important;
+  color: white !important;
+}
+
+/* Scrollbar styling for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 </style>

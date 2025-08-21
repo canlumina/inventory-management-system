@@ -21,6 +21,10 @@ export const purchasesApi = {
     return await api.put(`/purchases/${id}`, data)
   },
 
+  updateStatus: async (id: number, status: string): Promise<PurchaseOrder> => {
+    return await api.put(`/purchases/${id}/status`, { status })
+  },
+
   receive: async (id: number): Promise<PurchaseOrder> => {
     return await api.post(`/purchases/${id}/receive`)
   },
