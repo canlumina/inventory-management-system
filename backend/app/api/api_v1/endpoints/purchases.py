@@ -1,11 +1,13 @@
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.core.database import get_db
+from app.models.purchase_order import PurchaseOrderStatus
 
 router = APIRouter()
 
@@ -56,7 +58,30 @@ def read_purchase(
     return purchase
 
 
-@router.post("/{id}/receive")
+class StatusUpdateRequest(BaseModel):
+    status: PurchaseOrderStatus
+
+@router.put("/{id}/status", response_model=schemas.PurchaseOrder)
+def update_purchase_status(
+    *,
+    db: Session = Depends(get_db),
+    id: int,
+    status_request: StatusUpdateRequest,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Update purchase order status.
+    """
+    purchase = crud.purchase_order.get(db=db, id=id)
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+    
+    purchase_data = schemas.PurchaseOrderUpdate(status=status_request.status)
+    purchase = crud.purchase_order.update(db=db, db_obj=purchase, obj_in=purchase_data)
+    return purchase
+
+
+@router.post("/{id}/receive", response_model=schemas.PurchaseOrder)
 def receive_purchase(
     *,
     db: Session = Depends(get_db),
