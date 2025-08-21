@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.crud.base import CRUDBase
 from app.models.sales_order import SalesOrder, SalesOrderItem, SalesOrderStatus
@@ -11,6 +11,30 @@ from app.crud.crud_inventory import inventory
 
 
 class CRUDSalesOrder(CRUDBase[SalesOrder, SalesOrderCreate, SalesOrderUpdate]):
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100):
+        return (
+            db.query(self.model)
+            .options(
+                joinedload(SalesOrder.customer),
+                joinedload(SalesOrder.creator),
+                joinedload(SalesOrder.items).joinedload(SalesOrderItem.product)
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get(self, db: Session, id: int):
+        return (
+            db.query(self.model)
+            .options(
+                joinedload(SalesOrder.customer),
+                joinedload(SalesOrder.creator),
+                joinedload(SalesOrder.items).joinedload(SalesOrderItem.product)
+            )
+            .filter(self.model.id == id)
+            .first()
+        )
     def create_with_items(
         self, db: Session, *, obj_in: SalesOrderCreate, created_by: int
     ) -> SalesOrder:

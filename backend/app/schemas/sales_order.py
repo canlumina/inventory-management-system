@@ -4,6 +4,9 @@ from decimal import Decimal
 from datetime import datetime
 
 from app.models.sales_order import SalesOrderStatus
+from app.schemas.product import Product
+from app.schemas.customer import Customer
+from app.schemas.user import User
 
 
 class SalesOrderItemBase(BaseModel):
@@ -33,7 +36,7 @@ class SalesOrderItemInDBBase(SalesOrderItemBase):
 
 
 class SalesOrderItem(SalesOrderItemInDBBase):
-    pass
+    product: Optional[Product] = None
 
 
 class SalesOrderBase(BaseModel):
@@ -64,6 +67,8 @@ class SalesOrderInDBBase(SalesOrderBase):
 
 class SalesOrder(SalesOrderInDBBase):
     items: List[SalesOrderItem] = []
+    customer: Optional[Customer] = None
+    creator: Optional[User] = None
 
 
 class SalesOrderInDB(SalesOrderInDBBase):

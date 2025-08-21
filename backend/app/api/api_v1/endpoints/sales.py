@@ -1,11 +1,13 @@
 from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.core.database import get_db
+from app.models.sales_order import SalesOrderStatus
 
 router = APIRouter()
 
@@ -56,7 +58,30 @@ def read_sales_order(
     return sales
 
 
-@router.post("/{id}/ship")
+class StatusUpdateRequest(BaseModel):
+    status: SalesOrderStatus
+
+@router.put("/{id}/status", response_model=schemas.SalesOrder)
+def update_sales_status(
+    *,
+    db: Session = Depends(get_db),
+    id: int,
+    status_request: StatusUpdateRequest,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Update sales order status.
+    """
+    sales = crud.sales_order.get(db=db, id=id)
+    if not sales:
+        raise HTTPException(status_code=404, detail="Sales order not found")
+    
+    sales_data = schemas.SalesOrderUpdate(status=status_request.status)
+    sales = crud.sales_order.update(db=db, db_obj=sales, obj_in=sales_data)
+    return sales
+
+
+@router.post("/{id}/ship", response_model=schemas.SalesOrder)
 def ship_sales_order(
     *,
     db: Session = Depends(get_db),
