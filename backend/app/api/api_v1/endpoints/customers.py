@@ -70,3 +70,20 @@ def update_customer(
         raise HTTPException(status_code=404, detail="Customer not found")
     customer = crud.customer.update(db=db, db_obj=customer, obj_in=customer_in)
     return customer
+
+
+@router.delete("/{id}", response_model=schemas.Customer)
+def delete_customer(
+    *,
+    db: Session = Depends(get_db),
+    id: int,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Delete a customer.
+    """
+    customer = crud.customer.get(db=db, id=id)
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    customer = crud.customer.remove(db=db, id=id)
+    return customer

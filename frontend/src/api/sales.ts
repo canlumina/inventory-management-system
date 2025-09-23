@@ -3,18 +3,18 @@ import type { SalesOrder, SalesOrderItem } from '@/types'
 
 export const salesApi = {
   getList: async (params?: { skip?: number; limit?: number }): Promise<SalesOrder[]> => {
-    return await api.get('/sales', { params })
+    return await api.get('/sales/', { params })
   },
 
   getById: async (id: number): Promise<SalesOrder> => {
     return await api.get(`/sales/${id}`)
   },
 
-  create: async (data: { 
+  create: async (data: {
     customer_id: number
     items: SalesOrderItem[]
   }): Promise<SalesOrder> => {
-    return await api.post('/sales', data)
+    return await api.post('/sales/', data)
   },
 
   update: async (id: number, data: Partial<SalesOrder>): Promise<SalesOrder> => {

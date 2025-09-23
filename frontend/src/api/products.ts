@@ -11,7 +11,7 @@ export const productsApi = {
   },
 
   create: async (data: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> => {
-    return await api.post('/products', data)
+    return await api.post('/products/', data)
   },
 
   update: async (id: number, data: Partial<Product>): Promise<Product> => {

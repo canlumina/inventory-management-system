@@ -70,3 +70,20 @@ def update_supplier(
         raise HTTPException(status_code=404, detail="Supplier not found")
     supplier = crud.supplier.update(db=db, db_obj=supplier, obj_in=supplier_in)
     return supplier
+
+
+@router.delete("/{id}", response_model=schemas.Supplier)
+def delete_supplier(
+    *,
+    db: Session = Depends(get_db),
+    id: int,
+    current_user: models.User = Depends(deps.get_current_user),
+) -> Any:
+    """
+    Delete a supplier.
+    """
+    supplier = crud.supplier.get(db=db, id=id)
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+    supplier = crud.supplier.remove(db=db, id=id)
+    return supplier

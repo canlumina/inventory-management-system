@@ -16,5 +16,5 @@ class Category(Base):
 
     # Relationships
     parent = relationship("Category", remote_side=[id])
-    children = relationship("Category")
+    children = relationship("Category", overlaps="parent")
     products = relationship("Product", back_populates="category")

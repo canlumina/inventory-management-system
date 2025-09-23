@@ -3,7 +3,7 @@ import type { Customer } from '@/types'
 
 export const customersApi = {
   getList: async (params?: { skip?: number; limit?: number }): Promise<Customer[]> => {
-    return await api.get('/customers', { params })
+    return await api.get('/customers/', { params })
   },
 
   getById: async (id: number): Promise<Customer> => {
@@ -11,7 +11,7 @@ export const customersApi = {
   },
 
   create: async (data: Omit<Customer, 'id' | 'created_at'>): Promise<Customer> => {
-    return await api.post('/customers', data)
+    return await api.post('/customers/', data)
   },
 
   update: async (id: number, data: Partial<Customer>): Promise<Customer> => {

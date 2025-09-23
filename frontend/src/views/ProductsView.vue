@@ -11,7 +11,7 @@
     <!-- Search Filter -->
     <SearchFilter
       :loading="loading"
-      :initial-filters="{ search: '', category: '' }"
+      :initial-filters="{ search: '', category_id: undefined }"
       @search="handleSearch"
       @reset="handleReset"
     >
@@ -31,14 +31,17 @@
         </el-form-item>
         <el-form-item label="分类">
           <el-select
-            v-model="(filters as any).category"
+            v-model="(filters as any).category_id"
             placeholder="请选择分类"
             clearable
-            style="width: 150px"
+            style="width: 200px"
           >
-            <el-option label="电子产品" value="electronics" />
-            <el-option label="服装" value="clothing" />
-            <el-option label="食品" value="food" />
+            <el-option
+              v-for="category in flatCategories"
+              :key="category.id"
+              :label="category.name"
+              :value="category.id"
+            />
           </el-select>
         </el-form-item>
       </template>
@@ -110,6 +113,22 @@
           <el-input v-model="form.name" />
         </el-form-item>
         
+        <el-form-item label="商品分类" prop="category_id">
+          <el-select
+            v-model="form.category_id"
+            placeholder="请选择分类"
+            clearable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="category in flatCategories"
+              :key="category.id"
+              :label="category.name"
+              :value="category.id"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="商品编码" prop="code">
           <el-input v-model="form.code" />
         </el-form-item>
@@ -169,10 +188,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { type FormInstance } from 'element-plus'
 import { productsApi } from '@/api/products'
-import type { Product } from '@/types'
+import { categoriesApi } from '@/api/categories'
+import type { Product, Category } from '@/types'
 import SearchFilter from '@/components/SearchFilter.vue'
 import PaginationWrapper from '@/components/PaginationWrapper.vue'
 import { commonRules } from '@/utils/validation'
@@ -185,6 +205,7 @@ const dialogMode = ref<'create' | 'edit'>('create')
 const formRef = ref<FormInstance>()
 
 const products = ref<Product[]>([])
+const categories = ref<Category[]>([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -192,6 +213,7 @@ const total = ref(0)
 const form = reactive<Partial<Product>>({
   name: '',
   code: '',
+  category_id: undefined,
   unit: '件',
   purchase_price: undefined,
   sale_price: undefined,
@@ -202,10 +224,10 @@ const form = reactive<Partial<Product>>({
 // Search filters
 const searchFilters = ref<{
   search: string
-  category: string
+  category_id?: number
 }>({
   search: '',
-  category: ''
+  category_id: undefined
 })
 
 const rules = {
@@ -216,6 +238,60 @@ const rules = {
   sale_price: commonRules.price,
   min_stock: [{ required: true, message: '请输入最低库存', trigger: 'blur' }],
   description: commonRules.description
+}
+
+// 扁平化分类列表用于下拉选择
+const flatCategories = computed(() => {
+  const flattenCategories = (cats: Category[], level = 0): Category[] => {
+    const result: Category[] = []
+    for (const cat of cats) {
+      result.push({
+        ...cat,
+        name: '　'.repeat(level) + cat.name // 用全角空格表示层级
+      })
+      if (cat.children && cat.children.length > 0) {
+        result.push(...flattenCategories(cat.children, level + 1))
+      }
+    }
+    return result
+  }
+  return flattenCategories(categories.value)
+})
+
+// 加载分类
+const loadCategories = async () => {
+  try {
+    const data = await categoriesApi.getList()
+    categories.value = buildCategoryTree(data)
+  } catch (error) {
+    handleApiError(error, '加载分类列表失败')
+  }
+}
+
+// 构建分类树
+const buildCategoryTree = (cats: Category[]): Category[] => {
+  const categoryMap = new Map<number, Category>()
+  const rootCategories: Category[] = []
+
+  // 创建映射
+  cats.forEach(cat => {
+    categoryMap.set(cat.id, { ...cat, children: [] })
+  })
+
+  // 构建树结构
+  cats.forEach(cat => {
+    const category = categoryMap.get(cat.id)!
+    if (cat.parent_id) {
+      const parent = categoryMap.get(cat.parent_id)
+      if (parent) {
+        parent.children!.push(category)
+      }
+    } else {
+      rootCategories.push(category)
+    }
+  })
+
+  return rootCategories
 }
 
 const loadProducts = async () => {
@@ -230,8 +306,8 @@ const loadProducts = async () => {
     if (searchFilters.value.search) {
       params.search = searchFilters.value.search
     }
-    if (searchFilters.value.category) {
-      params.category = searchFilters.value.category
+    if (searchFilters.value.category_id) {
+      params.category_id = searchFilters.value.category_id
     }
     
     const data = await productsApi.getList(params)
@@ -261,6 +337,7 @@ const resetForm = () => {
     id: undefined,
     name: '',
     code: '',
+    category_id: undefined,
     unit: '件',
     purchase_price: undefined,
     sale_price: undefined,
@@ -314,7 +391,7 @@ const handleSearch = (filters: any) => {
 const handleReset = () => {
   searchFilters.value = {
     search: '',
-    category: ''
+    category_id: undefined
   }
   currentPage.value = 1
   loadProducts()
@@ -328,6 +405,7 @@ const handlePageChange = (page: number, size: number) => {
 }
 
 onMounted(() => {
+  loadCategories()
   loadProducts()
 })
 </script>

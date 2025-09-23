@@ -6,6 +6,15 @@ export interface User {
   created_at: string
 }
 
+export interface Category {
+  id: number
+  name: string
+  parent_id?: number
+  description?: string
+  created_at: string
+  children?: Category[]
+}
+
 export interface Product {
   id: number
   name: string
@@ -18,6 +27,7 @@ export interface Product {
   min_stock: number
   created_at: string
   updated_at?: string
+  category?: Category
 }
 
 export interface Inventory {
