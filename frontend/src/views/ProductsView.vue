@@ -188,7 +188,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onActivated, computed } from 'vue'
 import { type FormInstance } from 'element-plus'
 import { productsApi } from '@/api/products'
 import { categoriesApi } from '@/api/categories'
@@ -209,6 +209,7 @@ const categories = ref<Category[]>([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+const hasActivatedOnce = ref(false)
 
 const form = reactive<Partial<Product>>({
   name: '',
@@ -407,6 +408,14 @@ const handlePageChange = (page: number, size: number) => {
 onMounted(() => {
   loadCategories()
   loadProducts()
+})
+
+onActivated(() => {
+  if (hasActivatedOnce.value) {
+    loadCategories()
+  } else {
+    hasActivatedOnce.value = true
+  }
 })
 </script>
 
