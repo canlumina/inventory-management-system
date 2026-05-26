@@ -3,6 +3,9 @@
 # ===================================
 
 .claude/
+.claude/*
+.codex/
+.codex/*
 CLAUDE.md
 # ===== Python/Backend =====
 # Byte-compiled / optimized / DLL files

@@ -27,12 +27,16 @@ services:
       DATABASE_URL: postgresql://postgres:password@db:5432/inventory_db
       SECRET_KEY: your-secret-key-here-change-in-production
       BACKEND_CORS_ORIGINS: '["http://localhost:3000"]'
+      CREATE_DEFAULT_ADMIN: "true"
+      DEFAULT_ADMIN_USERNAME: admin
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin123
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "alembic upgrade head && python -m app.core.bootstrap && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   # Frontend
   frontend:
@@ -42,7 +46,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_URL: http://backend:8000
+      VITE_API_PROXY_TARGET: http://backend:8000
     depends_on:
       - backend
     volumes:

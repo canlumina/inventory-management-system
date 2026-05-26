@@ -2,11 +2,9 @@ import axios from 'axios'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { handleApiError } from '@/utils/errorHandler'
+import { resolveApiBaseUrl } from './config.mjs'
 
-// 在开发环境中使用代理，生产环境中使用环境变量
-const baseURL = '/api/v1'
-console.log('API Base URL:', baseURL)
-console.log('VITE_API_URL:', import.meta.env.VITE_API_URL)
+const baseURL = resolveApiBaseUrl(import.meta.env)
 
 const api = axios.create({
   baseURL,

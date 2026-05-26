@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     secret_key: str = "your-secret-key-here"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440  # 24小时
+
+    # Development bootstrap
+    create_default_admin: bool = False
+    default_admin_username: str = "admin"
+    default_admin_email: str = "admin@example.com"
+    default_admin_password: Optional[str] = None
     
     # CORS
     backend_cors_origins: list = ["http://localhost:3000", "http://localhost:8080"]

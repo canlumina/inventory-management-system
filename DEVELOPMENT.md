@@ -379,7 +379,7 @@ curl http://localhost:8000/api/v1/reports/dashboard  # ✅ 需要认证
 ### 开发环境启动
 ```bash
 # 使用 Docker Compose 一键启动
-docker-compose up -d
+docker compose up --build -d
 
 # 访问地址
 前端：http://localhost:3000
@@ -387,10 +387,12 @@ docker-compose up -d
 API文档：http://localhost:8000/docs
 ```
 
+开发环境 Compose 会在后端启动前自动执行 `alembic upgrade head`，并幂等创建默认管理员账号 `admin/admin123`。前端容器通过 `VITE_API_PROXY_TARGET=http://backend:8000` 代理 `/api` 请求到后端。
+
 ### 数据库迁移
 ```bash
 # 进入后端容器
-docker-compose exec backend bash
+docker compose exec backend bash
 
 # 执行数据库迁移
 alembic upgrade head
@@ -398,6 +400,8 @@ alembic upgrade head
 # 生成新迁移文件
 alembic revision --autogenerate -m "描述"
 ```
+
+本地运行迁移时，`DATABASE_URL` 会覆盖 `backend/alembic.ini` 中的默认连接串。
 
 ### 前端构建
 ```bash

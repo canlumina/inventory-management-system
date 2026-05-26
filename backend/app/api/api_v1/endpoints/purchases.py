@@ -61,6 +61,35 @@ def read_purchase(
 class StatusUpdateRequest(BaseModel):
     status: PurchaseOrderStatus
 
+
+def _validate_purchase_status_update(
+    current_status: PurchaseOrderStatus,
+    next_status: PurchaseOrderStatus,
+) -> None:
+    if current_status == next_status:
+        return
+
+    if next_status == PurchaseOrderStatus.received:
+        raise ValueError("Use the receive endpoint to receive purchase orders")
+
+    allowed_transitions = {
+        PurchaseOrderStatus.pending: {
+            PurchaseOrderStatus.confirmed,
+            PurchaseOrderStatus.cancelled,
+        },
+        PurchaseOrderStatus.confirmed: {
+            PurchaseOrderStatus.cancelled,
+        },
+        PurchaseOrderStatus.received: set(),
+        PurchaseOrderStatus.cancelled: set(),
+    }
+
+    if next_status not in allowed_transitions.get(current_status, set()):
+        raise ValueError(
+            f"Cannot change purchase order status from {current_status.value} to {next_status.value}"
+        )
+
+
 @router.put("/{id}/status", response_model=schemas.PurchaseOrder)
 def update_purchase_status(
     *,
@@ -76,6 +105,11 @@ def update_purchase_status(
     if not purchase:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     
+    try:
+        _validate_purchase_status_update(purchase.status, status_request.status)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     purchase_data = schemas.PurchaseOrderUpdate(status=status_request.status)
     purchase = crud.purchase_order.update(db=db, db_obj=purchase, obj_in=purchase_data)
     return purchase
@@ -95,4 +129,7 @@ def receive_purchase(
     if not purchase:
         raise HTTPException(status_code=404, detail="Purchase order not found")
     
-    return crud.purchase_order.receive(db=db, purchase_order=purchase)
+    try:
+        return crud.purchase_order.receive(db=db, purchase_order=purchase)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

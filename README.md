@@ -166,17 +166,24 @@ webload/
 git clone <repository-url>
 cd webload
 
-# 启动所有服务
-docker-compose up -d
+# 启动所有服务，后端容器会先执行 alembic upgrade head
+docker compose up --build -d
 
 # 查看服务状态
-docker-compose ps
+docker compose ps
 ```
 
 **🎉 启动完成后访问：**
 - **前端应用**: http://localhost:3000
 - **后端 API**: http://localhost:8000  
 - **API 文档**: http://localhost:8000/docs
+
+开发环境会自动创建默认管理员账号：
+
+```text
+用户名：admin
+密码：admin123
+```
 
 ### 🛠 本地开发模式
 
@@ -290,19 +297,21 @@ docker-compose logs -f
 
 ```bash
 # 启动开发环境
-docker-compose up -d
+docker compose up --build -d
 
 # 查看服务状态
-docker-compose ps
+docker compose ps
 
 # 进入容器调试
-docker-compose exec backend bash
-docker-compose exec frontend sh
+docker compose exec backend bash
+docker compose exec frontend sh
 
 # 查看实时日志
-docker-compose logs -f backend
-docker-compose logs -f frontend
+docker compose logs -f backend
+docker compose logs -f frontend
 ```
+
+开发环境的 `docker-compose.yml` 会等待 PostgreSQL 健康检查通过，然后在后端容器启动 FastAPI 前自动执行 `alembic upgrade head`，并幂等创建默认管理员账号 `admin/admin123`。
 
 ## 🗄️ 数据库设计
 
@@ -377,13 +386,20 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/inventory_db
 SECRET_KEY=your-super-secret-key-here
 BACKEND_CORS_ORIGINS=["http://localhost:3000"]
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+CREATE_DEFAULT_ADMIN=false
+DEFAULT_ADMIN_USERNAME=admin
+DEFAULT_ADMIN_EMAIL=admin@example.com
+DEFAULT_ADMIN_PASSWORD=
 ```
 
 **前端环境变量** (`.env.development`):
 ```bash
-VITE_API_URL=http://localhost:8000
+VITE_API_BASE_URL=/api/v1
+VITE_API_PROXY_TARGET=http://localhost:8000
 VITE_APP_TITLE=进销存管理系统
 ```
+
+`VITE_API_BASE_URL` 控制浏览器端 Axios 请求前缀，默认是 `/api/v1`。`VITE_API_PROXY_TARGET` 只用于 Vite 开发服务器代理，默认是 `http://localhost:8000`；Docker Compose 中会设置为 `http://backend:8000`。
 
 #### 代码规范
 
@@ -455,6 +471,8 @@ alembic history
 # 查看当前版本
 alembic current
 ```
+
+Alembic 会优先读取 `DATABASE_URL` 环境变量；未设置时才使用 `backend/alembic.ini` 中的 `sqlalchemy.url`。
 
 ## 🤝 贡献指南
 

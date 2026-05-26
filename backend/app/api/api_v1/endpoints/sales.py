@@ -61,6 +61,38 @@ def read_sales_order(
 class StatusUpdateRequest(BaseModel):
     status: SalesOrderStatus
 
+
+def _validate_sales_status_update(
+    current_status: SalesOrderStatus,
+    next_status: SalesOrderStatus,
+) -> None:
+    if current_status == next_status:
+        return
+
+    if next_status == SalesOrderStatus.shipped:
+        raise ValueError("Use the ship endpoint to ship sales orders")
+
+    allowed_transitions = {
+        SalesOrderStatus.pending: {
+            SalesOrderStatus.confirmed,
+            SalesOrderStatus.cancelled,
+        },
+        SalesOrderStatus.confirmed: {
+            SalesOrderStatus.cancelled,
+        },
+        SalesOrderStatus.shipped: {
+            SalesOrderStatus.delivered,
+        },
+        SalesOrderStatus.delivered: set(),
+        SalesOrderStatus.cancelled: set(),
+    }
+
+    if next_status not in allowed_transitions.get(current_status, set()):
+        raise ValueError(
+            f"Cannot change sales order status from {current_status.value} to {next_status.value}"
+        )
+
+
 @router.put("/{id}/status", response_model=schemas.SalesOrder)
 def update_sales_status(
     *,
@@ -76,6 +108,11 @@ def update_sales_status(
     if not sales:
         raise HTTPException(status_code=404, detail="Sales order not found")
     
+    try:
+        _validate_sales_status_update(sales.status, status_request.status)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     sales_data = schemas.SalesOrderUpdate(status=status_request.status)
     sales = crud.sales_order.update(db=db, db_obj=sales, obj_in=sales_data)
     return sales
@@ -95,4 +132,7 @@ def ship_sales_order(
     if not sales:
         raise HTTPException(status_code=404, detail="Sales order not found")
     
-    return crud.sales_order.ship(db=db, sales_order=sales)
+    try:
+        return crud.sales_order.ship(db=db, sales_order=sales)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
