@@ -390,7 +390,9 @@ docker compose up --build -d
 API文档：http://localhost:8000/docs
 ```
 
-开发环境 Compose 会在后端启动前自动执行 `alembic upgrade head`，并幂等创建默认管理员账号 `admin/admin123`。前端容器通过 `VITE_API_PROXY_TARGET=http://backend:8000` 代理 `/api` 请求到后端。
+开发环境 Compose 会读取根目录 `.env`（可由 `.env.example` 复制生成），在后端启动前自动执行 `alembic upgrade head`，并按 `CREATE_DEFAULT_ADMIN=true` 幂等创建默认管理员账号。前端容器通过 `VITE_API_PROXY_TARGET=http://backend:8000` 代理 `/api` 请求到后端。
+
+生产环境必须设置 `ENVIRONMENT=production`，并替换默认 `SECRET_KEY`、`POSTGRES_PASSWORD` 和 `DEFAULT_ADMIN_PASSWORD`。后端配置会在生产模式下拒绝默认密钥、默认数据库密码和默认管理员密码。
 
 ### 数据库迁移
 ```bash

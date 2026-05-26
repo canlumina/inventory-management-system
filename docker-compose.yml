@@ -3,15 +3,15 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: inventory_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB:-inventory_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-postgres-password}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -24,13 +24,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/inventory_db
-      SECRET_KEY: your-secret-key-here-change-in-production
-      BACKEND_CORS_ORIGINS: '["http://localhost:3000"]'
-      CREATE_DEFAULT_ADMIN: "true"
-      DEFAULT_ADMIN_USERNAME: admin
-      DEFAULT_ADMIN_EMAIL: admin@example.com
-      DEFAULT_ADMIN_PASSWORD: admin123
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-dev-postgres-password}@db:5432/${POSTGRES_DB:-inventory_db}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-before-production}
+      BACKEND_CORS_ORIGINS: '${BACKEND_CORS_ORIGINS:-["http://localhost:3000"]}'
+      CREATE_DEFAULT_ADMIN: "${CREATE_DEFAULT_ADMIN:-true}"
+      DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@example.com}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123}
     depends_on:
       db:
         condition: service_healthy
@@ -46,7 +47,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_PROXY_TARGET: http://backend:8000
+      VITE_API_PROXY_TARGET: ${VITE_API_PROXY_TARGET:-http://backend:8000}
     depends_on:
       - backend
     volumes:

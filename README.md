@@ -164,7 +164,11 @@ webload/
 ```bash
 # 克隆项目
 git clone <repository-url>
-cd webload
+cd inventory-management-system
+
+# 准备 Compose 环境变量
+cp .env.example .env
+# 开发环境可直接使用默认值；生产环境必须修改 SECRET_KEY、POSTGRES_PASSWORD 和 DEFAULT_ADMIN_PASSWORD
 
 # 启动所有服务，后端容器会先执行 alembic upgrade head
 docker compose up --build -d
@@ -383,8 +387,9 @@ docker compose logs -f frontend
 
 **后端环境变量** (`.env`):
 ```bash
-DATABASE_URL=postgresql://postgres:password@localhost:5432/inventory_db
-SECRET_KEY=your-super-secret-key-here
+ENVIRONMENT=development
+DATABASE_URL=postgresql://postgres:dev-postgres-password@localhost:5432/inventory_db
+SECRET_KEY=dev-secret-key-change-before-production
 BACKEND_CORS_ORIGINS=["http://localhost:3000"]
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 CREATE_DEFAULT_ADMIN=false
@@ -401,6 +406,8 @@ VITE_APP_TITLE=进销存管理系统
 ```
 
 `VITE_API_BASE_URL` 控制浏览器端 Axios 请求前缀，默认是 `/api/v1`。`VITE_API_PROXY_TARGET` 只用于 Vite 开发服务器代理，默认是 `http://localhost:8000`；Docker Compose 中会设置为 `http://backend:8000`。
+
+生产环境设置 `ENVIRONMENT=production` 时，后端会拒绝默认 `SECRET_KEY`、默认数据库密码和默认管理员密码。建议使用 `openssl rand -hex 32` 生成 `SECRET_KEY`，并关闭 `CREATE_DEFAULT_ADMIN` 或设置强密码。
 
 #### 代码规范
 
