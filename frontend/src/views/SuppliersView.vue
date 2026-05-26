@@ -194,8 +194,10 @@ const handleSubmit = async () => {
 
     dialogVisible.value = false
     loadSuppliers()
-  } catch (error) {
-    console.error('Submit failed:', error)
+  } catch {
+    if (submitting.value) {
+      ElMessage.error(dialogMode.value === 'create' ? '供应商创建失败' : '供应商更新失败')
+    }
   } finally {
     submitting.value = false
   }

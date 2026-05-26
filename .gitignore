@@ -280,6 +280,7 @@ public
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # ===== Database =====
 # SQLite databases

@@ -52,13 +52,13 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>销售排行榜</span>
+              <span>商品库存排行</span>
             </div>
           </template>
           
           <el-table :data="topProducts" style="width: 100%">
             <el-table-column prop="name" label="商品名称" />
-            <el-table-column prop="sales" label="销量" width="80" />
+            <el-table-column prop="stock" label="库存" width="80" />
           </el-table>
         </el-card>
       </el-col>
@@ -284,10 +284,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { reportsApi } from '@/api/reports'
 import type { InventoryReport, SalesReport, PurchaseReport, FinancialSummary } from '@/api/reports'
+import {
+  buildCustomerAmountRanking,
+  buildProductStockRanking,
+  buildSupplierAmountRanking,
+} from '@/utils/reportRankings.mjs'
 
 const salesDateRange = ref([])
 const activeTab = ref('sales')
@@ -301,28 +306,9 @@ const salesReport = ref<SalesReport | null>(null)
 const purchaseReport = ref<PurchaseReport | null>(null)
 const financialReport = ref<FinancialSummary | null>(null)
 
-// 模拟数据
-const topProducts = ref([
-  { name: 'iPhone 14 Pro', sales: 150 },
-  { name: '小米 13', sales: 120 },
-  { name: 'iPad Air', sales: 95 },
-  { name: 'MacBook Pro', sales: 88 },
-  { name: '华为 P50', sales: 76 }
-])
-
-const topSuppliers = ref([
-  { name: '苹果供应商', amount: 1250000 },
-  { name: '小米供应商', amount: 980000 },
-  { name: '华为供应商', amount: 750000 },
-  { name: '三星供应商', amount: 650000 }
-])
-
-const topCustomers = ref([
-  { name: '大客户A', amount: 580000 },
-  { name: '企业客户B', amount: 450000 },
-  { name: '零售客户C', amount: 320000 },
-  { name: '经销商D', amount: 280000 }
-])
+const topProducts = computed(() => buildProductStockRanking(inventoryReport.value))
+const topSuppliers = computed(() => buildSupplierAmountRanking(purchaseReport.value))
+const topCustomers = computed(() => buildCustomerAmountRanking(salesReport.value))
 
 const salesReportForm = reactive({
   dateRange: []

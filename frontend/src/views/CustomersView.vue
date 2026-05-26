@@ -194,8 +194,10 @@ const handleSubmit = async () => {
 
     dialogVisible.value = false
     loadCustomers()
-  } catch (error) {
-    console.error('Submit failed:', error)
+  } catch {
+    if (submitting.value) {
+      ElMessage.error(dialogMode.value === 'create' ? '客户创建失败' : '客户更新失败')
+    }
   } finally {
     submitting.value = false
   }

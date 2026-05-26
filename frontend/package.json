@@ -10,6 +10,8 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "preview": "vite preview",
     "test:config": "node --test src/api/config.test.mjs",
+    "test:reports": "node --test src/utils/reportRankings.test.mjs",
+    "test:views": "node --test src/utils/viewCleanliness.test.mjs",
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {

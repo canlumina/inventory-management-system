@@ -242,8 +242,10 @@ const handleSubmit = async () => {
 
     dialogVisible.value = false
     loadCategories()
-  } catch (error) {
-    console.error('Submit failed:', error)
+  } catch {
+    if (submitting.value) {
+      ElMessage.error(dialogMode.value === 'create' ? '分类创建失败' : '分类更新失败')
+    }
   } finally {
     submitting.value = false
   }

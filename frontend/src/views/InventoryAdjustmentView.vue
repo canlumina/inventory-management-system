@@ -146,9 +146,8 @@ const loadProductInventory = async (productId: number) => {
   try {
     const data = await inventoryApi.getByProductId(productId)
     selectedProductInventory.value = data
-  } catch (error) {
+  } catch {
     selectedProductInventory.value = null
-    console.log('获取库存信息失败，可能是新商品')
   }
 }
 
@@ -167,8 +166,10 @@ const handleSubmit = async () => {
 
     ElMessage.success('库存调整成功')
     router.push('/inventory')
-  } catch (error) {
-    console.error('Adjustment failed:', error)
+  } catch {
+    if (submitting.value) {
+      ElMessage.error('库存调整失败')
+    }
   } finally {
     submitting.value = false
   }

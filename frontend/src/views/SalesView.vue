@@ -29,15 +29,8 @@
             {{ formatDateTime(scope.row.order_date) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="280">
+        <el-table-column label="操作" width="200">
           <template #default="scope">
-            <el-button
-              type="primary"
-              size="small"
-              @click="viewSales(scope.row)"
-            >
-              查看
-            </el-button>
             <el-dropdown 
               v-if="scope.row.status !== 'delivered' && scope.row.status !== 'cancelled'"
               @command="(command: string) => updateStatus(scope.row, command)"
@@ -352,15 +345,13 @@ const handleSubmit = async () => {
     ElMessage.success('销售单创建成功')
     createDialogVisible.value = false
     loadSales()
-  } catch (error) {
-    console.error('Submit failed:', error)
+  } catch {
+    if (submitting.value) {
+      ElMessage.error('销售单创建失败')
+    }
   } finally {
     submitting.value = false
   }
-}
-
-const viewSales = (sales: SalesOrder) => {
-  console.log('View sales:', sales)
 }
 
 const updateStatus = async (sales: SalesOrder, status: string) => {
