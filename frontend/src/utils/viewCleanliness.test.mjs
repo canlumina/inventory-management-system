@@ -37,3 +37,12 @@ test('ReportsView does not ship placeholder mock ranking data', () => {
   assert.equal(reportsView.includes('模拟数据'), false)
   assert.equal(reportsView.includes('iPhone 14 Pro'), false)
 })
+
+test('ProductsView refreshes category options when restored from keep-alive', () => {
+  const appView = readFileSync(new URL('../App.vue', import.meta.url), 'utf8')
+  const productsView = readFileSync(new URL('../views/ProductsView.vue', import.meta.url), 'utf8')
+
+  assert.match(appView, /<keep-alive>/)
+  assert.match(productsView, /import\s+\{[^}]*onActivated[^}]*\}\s+from\s+'vue'/)
+  assert.match(productsView, /onActivated\(\s*\(\)\s*=>\s*\{[\s\S]*loadCategories\(\)/)
+})
