@@ -15,6 +15,6 @@ export const authApi = {
   },
 
   getMe: async (): Promise<User> => {
-    return await api.post('/auth/test-token')
+    return await api.get('/users/me')
   },
 }
