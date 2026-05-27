@@ -46,3 +46,13 @@ test('ProductsView refreshes category options when restored from keep-alive', ()
   assert.match(productsView, /import\s+\{[^}]*onActivated[^}]*\}\s+from\s+'vue'/)
   assert.match(productsView, /onActivated\(\s*\(\)\s*=>\s*\{[\s\S]*loadCategories\(\)/)
 })
+
+test('ProductsView shows a placeholder for empty product description', () => {
+  const productsView = readFileSync(new URL('../views/ProductsView.vue', import.meta.url), 'utf8')
+  const descriptionField = productsView.match(
+    /<el-form-item\s+label="描述"\s+prop="description">[\s\S]*?<\/el-form-item>/,
+  )?.[0] ?? ''
+
+  assert.match(descriptionField, /v-model="form\.description"/)
+  assert.match(descriptionField, /placeholder="请输入商品描述信息"/)
+})
