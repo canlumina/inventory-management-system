@@ -80,6 +80,21 @@ class ProductEndpointTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual([item["id"] for item in response.json()], [target_product.id])
 
+    def test_read_products_filters_parent_category_with_descendants(self):
+        parent_category = self._create_category("Hardware")
+        child_category = Category(name="Keyboards", parent_id=parent_category.id)
+        other_category = self._create_category("Software")
+        self.db.add(child_category)
+        self.db.commit()
+        self.db.refresh(child_category)
+        target_product = self._create_product("Mechanical Keyboard", "MECH-KEYBOARD", child_category.id)
+        self._create_product("License", "LICENSE", other_category.id)
+
+        response = self.client.get("/api/v1/products/", params={"category_id": parent_category.id})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item["id"] for item in response.json()], [target_product.id])
+
     def test_read_products_filters_by_search_keyword(self):
         target_product = self._create_product("Industrial Keyboard", "IND-KEYBOARD")
         self._create_product("Office Mouse", "OFFICE-MOUSE")

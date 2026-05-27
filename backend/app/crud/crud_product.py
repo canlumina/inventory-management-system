@@ -4,6 +4,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
+from app.models.category import Category
 from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 
@@ -37,9 +38,26 @@ class CRUDProduct(CRUDBase[Product, ProductCreate, ProductUpdate]):
             query = query.filter(or_(Product.name.ilike(keyword), Product.code.ilike(keyword)))
 
         if category_id is not None:
-            query = query.filter(Product.category_id == category_id)
+            category_ids = self._get_category_with_descendant_ids(db, category_id=category_id)
+            query = query.filter(Product.category_id.in_(category_ids))
 
         return query.offset(skip).limit(limit).all()
+
+    def _get_category_with_descendant_ids(self, db: Session, *, category_id: int) -> List[int]:
+        category_ids = {category_id}
+        pending_ids = [category_id]
+
+        while pending_ids:
+            child_ids = [
+                row[0]
+                for row in db.query(Category.id)
+                .filter(Category.parent_id.in_(pending_ids))
+                .all()
+            ]
+            pending_ids = [child_id for child_id in child_ids if child_id not in category_ids]
+            category_ids.update(pending_ids)
+
+        return list(category_ids)
 
     def search_by_name(self, db: Session, *, name: str, skip: int = 0, limit: int = 100) -> List[Product]:
         return (
