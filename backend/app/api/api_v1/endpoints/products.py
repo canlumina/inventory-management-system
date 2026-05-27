@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -15,12 +15,20 @@ def read_products(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
+    search: Optional[str] = None,
+    category_id: Optional[int] = None,
     current_user: models.User = Depends(deps.get_current_user),
 ) -> Any:
     """
     Retrieve products.
     """
-    products = crud.product.get_multi(db, skip=skip, limit=limit)
+    products = crud.product.get_filtered(
+        db,
+        search=search,
+        category_id=category_id,
+        skip=skip,
+        limit=limit,
+    )
     return products
 
 
@@ -72,7 +80,7 @@ def update_product(
     return product
 
 
-@router.delete("/{id}")
+@router.delete("/{id}", response_model=schemas.Product)
 def delete_product(
     *,
     db: Session = Depends(get_db),
@@ -85,5 +93,6 @@ def delete_product(
     product = crud.product.get(db=db, id=id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    product = crud.product.remove(db=db, id=id)
-    return product
+    deleted_product = schemas.Product.model_validate(product)
+    crud.product.remove(db=db, id=id)
+    return deleted_product
